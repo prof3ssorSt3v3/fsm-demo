@@ -1,54 +1,45 @@
 export const machine = {
   dispatch(actionName, ...payload) {
     const actions = this.transitions[this.state];
-    const action = this.transitions[this.state][actionName];
-    //could be a place to apply optional chaining
+    const action = actions?.[actionName];
+    //A good place to apply optional chaining
     if (action) {
-      action.apply(machine, ...payload);
+      console.log(actionName, payload);
+      action.apply(machine, payload);
     }
   },
 
   changeStateTo(newState) {
     //for all transitions
-    this.onBeforeTransition(this.state, newState);
+    this.lifecycle['onBeforeTransition'](this.state, newState);
     //check for an onLeave event
-    if (this.transitions[this.state].lifecycle.onLeave) {
-      this.transitions[this.state].lifecycle.onLeave.call(this);
+    if (this.lifecycle.transitions[this.state].onLeave) {
+      this.lifecycle.transitions[this.state].onLeave.call(this);
     }
     //change the state
     let oldState = this.state;
     this.state = newState;
     //check for an onEnter event
-    if (this.transitions[newState].lifecycle.onEnter) {
-      this.transitions[newState].lifecycle.onEnter.call(this);
+    if (this.lifecycle.transitions[newState].onEnter) {
+      this.lifecycle.transitions[newState].onEnter.call(this);
     }
     //for all transitions
-    this.onAfterTransition(oldState, newState);
+    this.lifecycle['onAfterTransition'](oldState, newState);
     //this would be longer if state was an object instead of just a string
   },
 
   //LIFECYCLE methods
-  onBeforeTransition(oldState, newState) {
-    //do something before every transition
-    console.log(`About to go from ${oldState} to ${newState}`);
-  },
-  onAfterTransition(oldState, newState) {
-    //do something after every transition
-    console.log(`Just went from ${oldState} to ${newState}`);
-  },
-
-  state: 'ONE',
-  //this is the initial state
-
-  transitions: {
-    ONE: {
-      doAThing: function(payload) {
-        this.changeStateTo('TWO');
-        if (typeof payload === 'function') {
-          payload.call(this);
-        }
-      },
-      lifecycle: {
+  lifecycle: {
+    onBeforeTransition(oldState, newState) {
+      //do something before every transition
+      console.log(`About to go from ${oldState} to ${newState}`);
+    },
+    onAfterTransition(oldState, newState) {
+      //do something after every transition
+      console.log(`Just went from ${oldState} to ${newState}`);
+    },
+    transitions: {
+      ONE: {
         onEnter: function() {
           //example lifecycle method
           console.log('state ONE onEnter');
@@ -57,41 +48,14 @@ export const machine = {
           //example lifecycle method
           console.log('state ONE onLeave');
         }
-      }
-    },
-    TWO: {
-      undoAThing: function(payload) {
-        this.changeStateTo('ONE');
-        if (typeof payload === 'function') {
-          payload.call(this);
-        }
       },
-      startSomething: function(payload) {
-        this.changeStateTo('THREE');
-        if (typeof payload === 'function') {
-          payload.call(this);
-        }
-      },
-      lifecycle: {
+      TWO: {
         onLeave: function() {
           console.log('state TWO leave');
         }
-      }
-    },
-    THREE: {
-      finishSomething: function(payload) {
-        this.changeStateTo('FOUR');
-        if (typeof payload === 'function') {
-          payload.call(this);
-        }
+        //no onEnter for this state
       },
-      startOver: function(payload) {
-        this.changeStateTo('ONE');
-        if (typeof payload === 'function') {
-          payload.call(this);
-        }
-      },
-      lifecycle: {
+      THREE: {
         onEnter: function() {
           //example lifecycle method
           console.log('state THREE onEnter');
@@ -100,23 +64,68 @@ export const machine = {
           //example lifecycle method
           console.log('state THREE onLeave');
         }
+      },
+      FOUR: {
+        //no onEnter or onLeave for this state
+      }
+    }
+  },
+
+  state: 'ONE',
+  //this is the initial state
+
+  transitions: {
+    ONE: {
+      doAThing: function(...payload) {
+        console.log('ONE', payload);
+        this.changeStateTo('TWO');
+        if (typeof payload[0] === 'function') {
+          payload[0].call(this);
+        }
+      }
+    },
+    TWO: {
+      undoAThing: function(...payload) {
+        this.changeStateTo('ONE');
+        if (typeof payload[0] === 'function') {
+          payload[0].call(this);
+        }
+      },
+      startSomething: function(...payload) {
+        this.changeStateTo('THREE');
+        if (typeof payload[0] === 'function') {
+          payload[0].call(this);
+        }
+      }
+    },
+    THREE: {
+      finishSomething: function(...payload) {
+        this.changeStateTo('FOUR');
+        if (typeof payload[0] === 'function') {
+          payload[0].call(this);
+        }
+      },
+      startOver: function(...payload) {
+        this.changeStateTo('ONE');
+        if (typeof payload[0] === 'function') {
+          payload[0].call(this);
+        }
       }
     },
     FOUR: {
-      startOver: function(payload) {
+      startOver: function(...payload) {
         this.changeStateTo('ONE');
-        if (typeof payload === 'function') {
-          payload.call(this);
+        if (typeof payload[0] === 'function') {
+          payload[0].call(this);
         }
       },
-      waitForAWhile: function(payload) {
+      waitForAWhile: function(...payload) {
         this.changeStateTo('FOUR');
         console.log('in state FOUR. Staying in state FOUR.');
-        if (typeof payload === 'function') {
-          payload.call(this);
+        if (typeof payload[0] === 'function') {
+          payload[0].call(this);
         }
-      },
-      lifecycle: {}
+      }
     }
   }
 };
